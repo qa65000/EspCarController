@@ -21,7 +21,7 @@
 // WiFi Definitions //
 //////////////////////
 const char APPass[] = "12345678";      // 8 charctor
-const unsigned int localPort = 65000;
+const word localPort = 65000;
 /////////////////////
 // Class           //
 /////////////////////
@@ -83,6 +83,112 @@ void Int10ms( void )
   if(InitTimer)
           InitTimer--;
 }
+/////////////////////////////////////////
+/////// Nible2Pwm  //////////////////////
+/////////////////////////////////////////
+word ToPwm( byte Val )
+{
+    return (((word)Val) << 5);    //max fff-min000
+}
+
+/////////////////////////////////////////
+/////// Led Main            /////////////
+/////////////////////////////////////////
+void LedMain(void)
+{
+  if(InitTimer)
+  {
+     GreenLed= BlueLed =RedLed = Blink;
+  }
+  if (RedLed )  digitalWrite(OLED_RED, HIGH);
+  else            digitalWrite(OLED_RED, LOW );
+
+  if (BlueLed ) digitalWrite(OLED_BLUE, HIGH);
+  else            digitalWrite(OLED_BLUE, LOW );
+
+  if (GreenLed)  digitalWrite(OLED_GREEN, HIGH);
+  else            digitalWrite(OLED_GREEN, LOW );
+
+}
+/////////////////////////////////////////
+/////// Target ... up/down  /////////////
+/////////////////////////////////////////
+void TargetUpDown( word* Target , word* Now )
+{
+   if( *Target > *Now ) 
+  {
+    if( (*Target - *Now) >= 0x60 ) *Now += 0x60;  
+    else                           *Now = *Target; 
+   }else{
+     if( (*Now - *Target) >= 0x60 ) *Now -= 0x60;
+     else                           *Now = *Target;
+   }
+}
+/////////////////////////////////////////
+/////// Motor Main          /////////////
+/////////////////////////////////////////
+void MotorMain(void)
+{
+  if(!MotorTimer)
+  {
+     LeftMotorP   = 0;
+     LeftMotorM   = 0;
+     RightMotorP  = 0;
+     RightMotorM  = 0;
+  }
+  if ( SLeftMotorP != LeftMotorP )
+  {
+    TargetUpDown( &LeftMotorP , &SLeftMotorP );
+    analogWrite(OLEFT_MTRP , SLeftMotorP );
+  }
+  if ( SLeftMotorM != LeftMotorM )
+  {
+    TargetUpDown( &LeftMotorM , &SLeftMotorM );
+    analogWrite(OLEFT_MTRM , SLeftMotorM );
+  }
+  if ( SRightMotorP != RightMotorP )
+  {
+    TargetUpDown( &RightMotorP , &SRightMotorP );
+    analogWrite(ORIGHT_MTRP, SRightMotorP );
+  }
+  if ( SRightMotorM != RightMotorM )
+  {
+    TargetUpDown( &RightMotorM , &SRightMotorM );
+    analogWrite(ORIGHT_MTRM, SRightMotorM );
+  }
+}
+
+
+/////////////////////////////////////////
+/////// Command Analyze Main /////////////
+/////////////////////////////////////////
+void UdpCommandAnalyze(void)
+{
+  unsigned char  ReadCount;
+  delay(10);
+  ReadCount = Udp.parsePacket();
+  if ( ReadCount >= 5 )
+  {
+    Udp.read(PacketBuff, ReadCount); // read the packet into the buffer
+    switch ( PacketBuff[0] )
+    {
+        case  'L' :
+          RedLed   = ((LedCommad*)PacketBuff)->Red;
+          GreenLed = ((LedCommad*)PacketBuff)->Green;
+          BlueLed  = ((LedCommad*)PacketBuff)->Blue;
+          break;
+        case  'M' :
+          LeftMotorP  =  ToPwm( ((MotorCommand*)PacketBuff)->LeftP );
+          LeftMotorM  =  ToPwm( ((MotorCommand*)PacketBuff)->LeftM );
+          RightMotorP =  ToPwm( ((MotorCommand*)PacketBuff)->RightP );
+          RightMotorM =  ToPwm( ((MotorCommand*)PacketBuff)->RightM );
+          MotorTimer  = TIMER100MS;
+        default:
+          break;
+   }
+  }
+}
+
 /////////////////////////////////////////
 /////// SetUp ///////////////////////////
 /////////////////////////////////////////
@@ -161,110 +267,6 @@ void setup()
    Timer10Ms.attach(0.010f, Int10ms);
 }
 
-/////////////////////////////////////////
-/////// Nible2Pwm  //////////////////////
-/////////////////////////////////////////
-word ToPwm( byte Val )
-{
-    return (((word)Val) << 5);    //max fff-min000
-}
-
-/////////////////////////////////////////
-/////// Led Main            /////////////
-/////////////////////////////////////////
-void LedMain(void)
-{
-  if(InitTimer)
-  {
-     GreenLed= BlueLed =RedLed = Blink;
-  }
-  if (RedLed )  digitalWrite(OLED_RED, HIGH);
-  else            digitalWrite(OLED_RED, LOW );
-
-  if (BlueLed ) digitalWrite(OLED_BLUE, HIGH);
-  else            digitalWrite(OLED_BLUE, LOW );
-
-  if (GreenLed)  digitalWrite(OLED_GREEN, HIGH);
-  else            digitalWrite(OLED_GREEN, LOW );
-
-}
-/////////////////////////////////////////
-/////// Motor Main          /////////////
-/////////////////////////////////////////
-void TargetUpDown( word* Target , word* Now )
-{
-   if( *Target > *Now ) 
-  {
-    if( (*Target - *Now) >= 0x60 ) *Now += 0x60;  
-    else                           *Now = *Target; 
-   }else{
-     if( (*Now - *Target) >= 0x60 ) *Now -= 0x60;
-     else                           *Now = *Target;
-   }
-}
-
-
-void MotorMain(void)
-{
-  if(!MotorTimer)
-  {
-     LeftMotorP   = 0;
-     LeftMotorM   = 0;
-     RightMotorP  = 0;
-     RightMotorM  = 0;
-  }
-  if ( SLeftMotorP != LeftMotorP )
-  {
-    TargetUpDown( &LeftMotorP , &SLeftMotorP );
-    analogWrite(OLEFT_MTRP , SLeftMotorP );
-  }
-  if ( SLeftMotorM != LeftMotorM )
-  {
-    TargetUpDown( &LeftMotorM , &SLeftMotorM );
-    analogWrite(OLEFT_MTRM , SLeftMotorM );
-  }
-  if ( SRightMotorP != RightMotorP )
-  {
-    TargetUpDown( &RightMotorP , &SRightMotorP );
-    analogWrite(ORIGHT_MTRP, SRightMotorP );
-  }
-  if ( SRightMotorM != RightMotorM )
-  {
-    TargetUpDown( &RightMotorM , &SRightMotorM );
-    analogWrite(ORIGHT_MTRM, SRightMotorM );
-  }
-}
-
-
-/////////////////////////////////////////
-/////// Command Analyze Main /////////////
-/////////////////////////////////////////
-void UdpCommandAnalyze(void)
-{
-  unsigned char  ReadCount;
-  delay(10);
-  ReadCount = Udp.parsePacket();
-  if ( ReadCount >= 5 )
-  {
-    Udp.read(PacketBuff, ReadCount); // read the packet into the buffer
-    switch ( PacketBuff[0] )
-    {
-        case  'L' :
-          RedLed   = ((LedCommad*)PacketBuff)->Red;
-          GreenLed = ((LedCommad*)PacketBuff)->Green;
-          BlueLed  = ((LedCommad*)PacketBuff)->Blue;
-          break;
-        case  'M' :
-          LeftMotorP  =  ToPwm( ((MotorCommand*)PacketBuff)->LeftP );
-          LeftMotorM  =  ToPwm( ((MotorCommand*)PacketBuff)->LeftM );
-          RightMotorP =  ToPwm( ((MotorCommand*)PacketBuff)->RightP );
-          RightMotorM =  ToPwm( ((MotorCommand*)PacketBuff)->RightM );
-          MotorTimer  = TIMER100MS;
-        default:
-          break;
-   }
-  }
-}
 /////////////////////////////////////////
 /////// Main Loop ///////////////////////
 /////////////////////////////////////////
