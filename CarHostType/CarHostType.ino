@@ -250,7 +250,6 @@ void setup()
 
   Serial.print("AP IP address: ");
   Serial.println(WiFi.softAPIP());
-  Serial.print("Wifi:"+WiFi.softAPIP());
 /////////////////////////////////////////////////////
   if(Udp.begin(localPort))
   {
@@ -262,9 +261,7 @@ void setup()
   }
 
   Serial.print("Local port: ");  Serial.println(Udp.localPort());
- 
-  Serial.print("Wifi:"+WiFi.softAPIP());
-   Timer10Ms.attach(0.010f, Int10ms);
+  Timer10Ms.attach(0.010f, Int10ms);
 }
 
 /////////////////////////////////////////
