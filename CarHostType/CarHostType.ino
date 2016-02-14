@@ -1,3 +1,4 @@
+///Ver 1.02
 #include <ESP8266WiFi.h>
 #include <WiFiUDP.h>
 #include <Ticker.h>
