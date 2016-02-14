@@ -5,6 +5,7 @@
 //////////////////////
 // Port Definitions //
 //////////////////////
+#define  NO_130MOTOR    1
 #define  OLED_RED    16
 #define  OLED_GREEN  5
 #define  OLED_BLUE   4
@@ -115,6 +116,9 @@ void LedMain(void)
 /////////////////////////////////////////
 void TargetUpDown( word* Target , word* Now )
 {
+#if  NO_130MOTOR
+   *Now = *Target;
+#else
    if( *Target > *Now ) 
   {
     if( (*Target - *Now) >= 0x60 ) *Now += 0x60;  
@@ -123,6 +127,7 @@ void TargetUpDown( word* Target , word* Now )
      if( (*Now - *Target) >= 0x60 ) *Now -= 0x60;
      else                           *Now = *Target;
    }
+#endif
 }
 /////////////////////////////////////////
 /////// Motor Main          /////////////
